@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Made in the Royal Navy - Emma Cook | TMP268</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,900;1,300&family=Playfair+Display:ital,wght@0,700;0,900;1,700;1,900&display=swap');
+:root{
+  --navy:#0d1b2a;--navy2:#0a1520;
+  --teal:#1a7a8a;--teal-l:#22a0b4;
+  --gold:#c9a84c;--gold-l:#e8c96a;
+  --red:#e05a5a;--red-d:#8a2020;
+  --txt:#e8edf2;--txt-mid:#9eb4c5;--txt-dim:#4a6070;
+  --fd:'Playfair Display','Georgia',serif;
+  --fb:'Inter','Segoe UI',system-ui,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--navy);font-family:var(--fb);color:var(--txt);}
+#deck{width:100vw;height:100vh;position:relative;overflow:hidden;}
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;opacity:0;pointer-events:none;transition:opacity .55s cubic-bezier(.4,0,.2,1);}
+.slide.active{opacity:1;pointer-events:all;}
+.gbar{height:5px;background:linear-gradient(90deg,var(--gold),var(--gold-l),var(--gold));flex-shrink:0;}
+.foot{height:40px;flex-shrink:0;background:rgba(0,0,0,.5);border-top:1px solid rgba(255,255,255,.06);display:flex;align-items:center;padding:0 52px;justify-content:space-between;}
+.foot-l{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--txt-dim);}
+.foot-r{font-size:10px;letter-spacing:.1em;color:var(--txt-dim);}
+#prog{position:fixed;top:5px;left:0;right:0;height:2px;background:rgba(255,255,255,.06);z-index:200;}
+#prog-bar{height:100%;background:var(--gold);transition:width .4s ease;}
+#ctr{position:fixed;top:14px;right:22px;font-size:10px;color:var(--txt-dim);z-index:200;letter-spacing:.1em;}
+#hint{position:fixed;top:14px;left:22px;font-size:10px;color:rgba(255,255,255,.15);z-index:200;}
+
+#journey-wrap{position:fixed;bottom:40px;left:0;right:0;z-index:100;transition:opacity .4s;}
+#journey-wrap.hidden{opacity:0;pointer-events:none;}
+.timeline{position:relative;height:80px;padding:0 52px;display:flex;align-items:center;background:rgba(6,12,20,.97);border-top:1px solid rgba(255,255,255,.08);}
+.tl-line{position:absolute;left:52px;right:52px;top:30px;height:2px;background:rgba(255,255,255,.08);}
+.tl-line-fill{position:absolute;left:0;top:0;height:100%;width:0%;transition:width .6s cubic-bezier(.4,0,.2,1);}
+.tl-line-fill.broken{background:linear-gradient(90deg,var(--red-d),var(--red));}
+.tl-line-fill.fixed{background:linear-gradient(90deg,var(--teal),var(--teal-l));}
+.tl-steps{position:relative;width:100%;display:flex;justify-content:space-between;align-items:flex-start;padding-top:22px;}
+.tl-step{display:flex;flex-direction:column;align-items:center;gap:8px;}
+.tl-dot{width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.15);transition:all .5s cubic-bezier(.4,0,.2,1);flex-shrink:0;z-index:2;}
+.tl-label{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--txt-dim);transition:color .5s;white-space:nowrap;line-height:1.3;text-align:center;}
+.tl-step.s-done .tl-dot{background:var(--teal);border-color:var(--teal-l);box-shadow:0 0 8px rgba(34,160,180,.4);}
+.tl-step.s-done .tl-label{color:var(--teal-l);}
+.tl-step.s-active .tl-dot{background:var(--gold);border-color:var(--gold-l);}
+.tl-step.s-active .tl-label{color:var(--gold-l);}
+.tl-step.s-broken .tl-dot{background:var(--red);border-color:var(--red);box-shadow:0 0 10px rgba(224,90,90,.5);}
+.tl-step.s-broken .tl-label{color:var(--red);}
+@keyframes pulse{0%,100%{box-shadow:0 0 14px rgba(201,168,76,.7);}50%{box-shadow:0 0 22px rgba(201,168,76,.9),0 0 40px rgba(201,168,76,.3);}}
+.tl-step.s-active .tl-dot{animation:pulse 2s ease infinite;}
+
+#maya-traveller{position:fixed;z-index:150;transform:translateX(-50%);pointer-events:none;transition:left .7s cubic-bezier(.4,0,.2,1),bottom .4s ease,opacity .4s,filter .5s;text-align:center;}
+#maya-traveller.hidden{opacity:0;}
+#maya-traveller .m-lbl{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-top:5px;}
+#maya-traveller.state-broken{filter:grayscale(.65) brightness(.6);opacity:.65;}
+@keyframes mayaGlitch{0%,100%{transform:translateX(-50%);}12%{transform:translateX(calc(-50% - 6px)) skewX(-4deg);}24%{transform:translateX(calc(-50% + 6px)) skewX(3deg);}36%{transform:translateX(calc(-50% - 3px));}48%{transform:translateX(calc(-50% + 4px)) skewX(-2deg);}60%{transform:translateX(-50%);}72%{transform:translateX(calc(-50% - 2px));}84%{transform:translateX(calc(-50% + 3px));}}
+@keyframes itemGlitch{0%,100%{transform:translateX(0);}12%{transform:translateX(-5px) skewX(-3deg);}24%{transform:translateX(5px) skewX(2deg);}36%{transform:translateX(-3px);}48%{transform:translateX(4px) skewX(-2deg);}60%{transform:translateX(0);}72%{transform:translateX(-2px);}84%{transform:translateX(3px);}}
+.glitch-now{animation:itemGlitch .45s ease 0s 3;}
+@keyframes mayaBounce{0%,100%{transform:translateX(-50%) translateY(0);}50%{transform:translateX(-50%) translateY(-8px);}}
+#maya-traveller.glitching{animation:mayaGlitch .5s ease 0s 3;}
+#maya-traveller.bouncing{animation:mayaBounce .5s ease 0s 2;}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(22px);}to{opacity:1;transform:none;}}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+.fu{opacity:0;}.fi{opacity:0;}
+.slide.active .fu{animation:fadeUp .65s cubic-bezier(.4,0,.2,1) forwards;}
+.slide.active .fi{animation:fadeIn .6s ease forwards;}
+.slide.active .fu:nth-child(1),.slide.active .fi:nth-child(1){animation-delay:.05s;}
+.slide.active .fu:nth-child(2),.slide.active .fi:nth-child(2){animation-delay:.18s;}
+.slide.active .fu:nth-child(3),.slide.active .fi:nth-child(3){animation-delay:.31s;}
+.slide.active .fu:nth-child(4),.slide.active .fi:nth-child(4){animation-delay:.44s;}
+.slide.active .fu:nth-child(5),.slide.active .fi:nth-child(5){animation-delay:.57s;}
+.slide.active .fu:nth-child(6),.slide.active .fi:nth-child(6){animation-delay:.70s;}
+.slide.active .fu:nth-child(7){animation-delay:.83s;}
+
+.reveal-item{opacity:0;transform:translateY(16px);transition:opacity .5s ease,transform .5s ease;}
+.reveal-item.shown{opacity:1;transform:none;}
+
+@media(prefers-reduced-motion:reduce){
+  .slide{transition:none;}.fu,.fi{animation:none!important;opacity:1;}
+  #maya-traveller{transition:opacity .3s;}.glitching,.bouncing{animation:none!important;}
+  .reveal-item{transition:none;}
+}
+
+.tag{font-size:10px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;margin-bottom:14px;}
+.tag.teal{color:var(--teal-l);}.tag.gold{color:var(--gold);}.tag.red{color:var(--red);}.tag.good{color:var(--teal-l);}
+.hl{font-family:var(--fd);font-size:clamp(26px,3.8vw,44px);font-weight:900;line-height:1.1;color:#fff;margin-bottom:20px;}
+.body{font-size:15px;line-height:1.8;color:var(--txt-mid);font-weight:300;}
+.body strong{color:var(--txt);font-weight:600;}
+.body em{color:var(--red);font-style:normal;font-weight:600;}
+.mtag{font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;padding:5px 14px;border:1px solid;display:inline-block;margin-bottom:18px;}
+.mtag.bad{color:var(--red);border-color:rgba(224,90,90,.4);background:rgba(224,90,90,.06);}
+.mtag.good{color:var(--teal-l);border-color:rgba(26,160,180,.4);background:rgba(26,122,138,.07);}
+.callout{background:rgba(26,122,138,.08);border-left:3px solid var(--teal);padding:16px 20px;font-size:14px;line-height:1.65;color:var(--txt-mid);}
+.callout strong{color:var(--txt);font-weight:600;}
+.callout.gold{background:rgba(201,168,76,.07);border-left-color:var(--gold);}
+.callout.red{background:rgba(224,90,90,.06);border-left-color:var(--red);}
+.split{flex:1;display:grid;grid-template-columns:44% 56%;}
+.sp-l{padding:48px 48px 48px 52px;display:flex;flex-direction:column;justify-content:center;border-right:1px solid rgba(255,255,255,.05);}
+.sp-r{padding:48px 52px 48px 48px;display:flex;flex-direction:column;justify-content:center;gap:14px;}
+.sp-l.teal-b{border-right-color:rgba(26,122,138,.25);}
+.sp-l.red-b{border-right-color:rgba(224,90,90,.2);}
+.item{display:flex;align-items:flex-start;gap:16px;padding:15px 18px;border:1px solid;}
+.item.bad{background:rgba(224,90,90,.04);border-color:rgba(224,90,90,.18);}
+.item.good{background:rgba(26,122,138,.05);border-color:rgba(26,122,138,.22);}
+.item.highlight{background:rgba(201,168,76,.06);border-color:rgba(201,168,76,.25);}
+.item-icon{font-size:18px;flex-shrink:0;line-height:1;margin-top:1px;}
+.item-text{font-size:14px;line-height:1.6;color:var(--txt-mid);font-weight:300;}
+.item-text strong{color:var(--txt);font-weight:600;}
+.item-text em{color:var(--red);font-style:normal;font-weight:600;}
+.item-text .pos{color:var(--teal-l);font-weight:600;}
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.pcard{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-left:3px solid var(--teal);padding:14px 16px;}
+.pcard.gold{border-left-color:var(--gold);}
+.pcard.hero{border:1px solid rgba(201,168,76,.35);border-left:3px solid var(--gold);background:rgba(201,168,76,.07);}
+.pname{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--teal-l);margin-bottom:6px;}
+.pcard.gold .pname,.pcard.hero .pname{color:var(--gold);}
+.pdesc{font-size:13px;line-height:1.55;color:var(--txt-mid);}
+.silence{padding:26px 32px;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.06);text-align:center;}
+.silence-num{font-family:var(--fd);font-size:72px;font-weight:900;color:rgba(255,255,255,.18);line-height:1;margin-bottom:8px;}
+.silence-lbl{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.25);}
+.aep{display:inline-flex;align-items:center;gap:8px;margin-top:12px;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;padding:8px 16px;border:1px solid rgba(201,168,76,.35);background:rgba(201,168,76,.07);color:var(--gold);}
+</style>
+</head>
+<body>
+
+<svg style="display:none">
+  <symbol id="maya" viewBox="0 0 52 52">
+    <circle cx="26" cy="26" r="26" fill="#1a3a4a"/>
+    <circle cx="26" cy="19" r="10" fill="rgba(255,255,255,.22)"/>
+    <path d="M6 50c0-11 8.95-20 20-20s20 8.95 20 20" fill="rgba(255,255,255,.18)"/>
+    <circle cx="26" cy="19" r="7" fill="rgba(255,255,255,.32)"/>
+  </symbol>
+  <symbol id="maya-check" viewBox="0 0 52 52">
+    <circle cx="26" cy="26" r="26" fill="#1a3a4a"/>
+    <circle cx="26" cy="19" r="10" fill="rgba(255,255,255,.22)"/>
+    <path d="M6 50c0-11 8.95-20 20-20s20 8.95 20 20" fill="rgba(255,255,255,.18)"/>
+    <circle cx="26" cy="19" r="7" fill="rgba(255,255,255,.32)"/>
+    <circle cx="41" cy="41" r="10" fill="#22a0b4"/>
+    <path d="M36.5 41l3.5 3.5 6-6" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </symbol>
+</svg>
+
+<div id="deck">
+
+<!-- S1: TITLE -->
+<div class="slide active" id="s1">
+  <div class="gbar"></div>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:48px;position:relative;">
+    <div style="position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 40%,rgba(26,122,138,.14),transparent 70%);"></div>
+    <div class="fu" style="font-size:11px;font-weight:700;letter-spacing:.28em;text-transform:uppercase;color:var(--teal-l);margin-bottom:28px;position:relative;">Royal Navy Recruitment CX - TMP268</div>
+    <div class="fu" style="font-family:var(--fd);font-size:clamp(56px,10vw,108px);font-weight:900;line-height:.9;letter-spacing:-.02em;margin-bottom:28px;position:relative;">Made in the<br><em style="color:var(--gold);font-style:italic;">Royal Navy.</em></div>
+    <div class="fu" style="width:56px;height:3px;background:var(--gold);margin:0 auto 28px;position:relative;"></div>
+    <div class="fu" style="font-size:clamp(15px,1.8vw,19px);font-weight:300;color:var(--txt-mid);line-height:1.65;max-width:520px;margin:0 auto 40px;position:relative;">Re-engineering the recruitment experience<br>to turn consideration into commitment.</div>
+    <div class="fu" style="font-size:12px;color:var(--txt-dim);letter-spacing:.12em;position:relative;">Emma Cook - CX Planner Candidate - July 2026</div>
+  </div>
+  <div class="foot"><span class="foot-l">Emma Cook | TMP268 | July 2026</span><span class="foot-r">Introduction</span></div>
+</div>
+
+<!-- S2: STAT (MOVED TO BE FIRST AFTER TITLE) -->
+<div class="slide" id="s2">
+  <div class="gbar"></div>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:48px;position:relative;">
+    <div style="position:absolute;inset:0;background:radial-gradient(ellipse 70% 55% at 50% 50%,rgba(201,168,76,.08),transparent 70%);"></div>
+    <div class="fu" style="font-size:11px;font-weight:700;letter-spacing:.28em;text-transform:uppercase;color:var(--txt-dim);margin-bottom:32px;position:relative;">Royal Navy and Royal Marines - UK Government, 2025</div>
+    <div class="fu" style="position:relative;">
+      <span id="c-pct" style="font-family:var(--fd);font-size:clamp(100px,20vw,190px);font-weight:900;line-height:.9;letter-spacing:-.03em;color:#fff;">0</span><span style="font-family:var(--fd);font-size:clamp(100px,20vw,190px);font-weight:900;color:var(--gold);">%</span>
+    </div>
+    <div class="fu" style="margin-top:28px;font-size:clamp(16px,2vw,21px);font-weight:300;color:var(--txt-mid);line-height:1.6;max-width:620px;position:relative;">
+      The Royal Navy and Royal Marines are <strong>8% below their target strength</strong>.<br>The MoD has called it a <strong style="color:var(--gold);">"workforce crisis"</strong>.<br>This presentation is about why, and what to do about it.
+    </div>
+    <div class="fu" style="margin-top:32px;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.18);position:relative;">Quarterly Service Personnel Statistics - UK Government 2025</div>
+  </div>
+  <div class="foot"><span class="foot-l">Emma Cook | TMP268 | July 2026</span><span class="foot-r">The scale of the problem</span></div>
+</div>
+
+<!-- S3: THREE CHALLENGES VERDICT -->
+<div class="slide" id="s3">
+  <div class="gbar"></div>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:64px 80px;position:relative;">
+    <div style="position:absolute;inset:0;background:radial-gradient(ellipse 60% 70% at 20% 50%,rgba(26,122,138,.1),transparent 65%);"></div>
+    <div class="fu" style="font-size:10px;font-weight:700;letter-spacing:.28em;text-transform:uppercase;color:var(--teal-l);margin-bottom:52px;position:relative;">Question 1 - The biggest challenges</div>
+    <div style="display:flex;flex-direction:column;gap:0;position:relative;">
+      <div class="fu" style="display:flex;align-items:baseline;gap:28px;padding:32px 0;border-top:1px solid rgba(255,255,255,.08);">
+        <div style="font-family:var(--fd);font-size:clamp(48px,7vw,80px);font-weight:900;color:rgba(255,255,255,.08);line-height:1;flex-shrink:0;width:80px;">01</div>
+        <div>
+          <div style="font-family:var(--fd);font-size:clamp(22px,3.2vw,36px);font-weight:900;color:#fff;line-height:1.1;margin-bottom:10px;">The predisposed base is shrinking.</div>
+          <div style="font-size:15px;font-weight:300;color:var(--txt-mid);line-height:1.6;">The new audience has no military connections, no reference point, and no obvious door in on the current website.</div>
+        </div>
+      </div>
+      <div class="fu" style="display:flex;align-items:baseline;gap:28px;padding:32px 0;border-top:1px solid rgba(255,255,255,.08);">
+        <div style="font-family:var(--fd);font-size:clamp(48px,7vw,80px);font-weight:900;color:rgba(255,255,255,.08);line-height:1;flex-shrink:0;width:80px;">02</div>
+        <div>
+          <div style="font-family:var(--fd);font-size:clamp(22px,3.2vw,36px);font-weight:900;color:#fff;line-height:1.1;margin-bottom:10px;">Motivational drivers have shifted.</div>
+          <div style="font-size:15px;font-weight:300;color:var(--txt-mid);line-height:1.6;">Younger candidates are motivated by identity, purpose and personal growth. The current proposition speaks to someone who already wants to join.</div>
+        </div>
+      </div>
+      <div class="fu" style="display:flex;align-items:baseline;gap:28px;padding:32px 0;border-top:1px solid rgba(255,255,255,.08);border-bottom:1px solid rgba(255,255,255,.08);">
+        <div style="font-family:var(--fd);font-size:clamp(48px,7vw,80px);font-weight:900;color:rgba(255,255,255,.08);line-height:1;flex-shrink:0;width:80px;">03</div>
+        <div>
+          <div style="font-family:var(--fd);font-size:clamp(22px,3.2vw,36px);font-weight:900;color:#fff;line-height:1.1;margin-bottom:10px;">The in-funnel experience fails the people it has already recruited.</div>
+          <div style="font-size:15px;font-weight:300;color:var(--txt-mid);line-height:1.6;">A 12-month application process with almost no communication. Candidates don't withdraw. They disappear.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span class="foot-l">Emma Cook | TMP268 | July 2026</span><span class="foot-r">Question 1 - The challenges</span></div>
+</div>
+
+<!-- S4: CULTURAL SHIFT -->
+<div class="slide" id="s4">
+  <div class="gbar"></div>
+  <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;position:relative;">
+    <div style="padding:60px 52px;display:flex;flex-direction:column;justify-content:center;border-right:1px solid rgba(255,255,255,.06);position:relative;">
+      <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(26,122,138,.06),transparent 60%);"></div>
+      <div class="fu" style="font-size:10px;font-weight:700;letter-spacing:.28em;text-transform:uppercase;color:var(--teal-l);margin-bottom:24px;position:relative;">The cultural shift</div>
+      <div class="fu" style="font-family:var(--fd);font-size:clamp(24px,3.5vw,40px);font-weight:900;line-height:1.1;color:#fff;margin-bottom:24px;position:relative;">From duty<br>to identity.</div>
+      <div class="fu" style="font-size:15px;line-height:1.8;color:var(--txt-mid);font-weight:300;position:relative;">Deloitte's Gen Z and Millennial Survey finds younger workers consistently prioritise <strong style="color:var(--txt);">meaningful work, personal development and values alignment</strong> over institutional loyalty.<br><br>The Army's own Leadership Insight No. 63 acknowledges that <strong style="color:var(--txt);">authenticity, balance and challenge</strong> are the primary career motivators for Gen Z.<br><br>The current Royal Navy proposition hasn't caught up.</div>
+    </div>
+    <div style="padding:60px 52px;display:flex;flex-direction:column;justify-content:center;gap:16px;">
+      <div class="fu" style="font-size:10px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;">What each persona actually needs to hear</div>
+      <div class="fu" style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-left:3px solid var(--teal);padding:16px 20px;">
+        <div style="font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--teal-l);margin-bottom:6px;">Tech Specialist</div>
+        <div style="font-size:14px;color:var(--txt-mid);font-weight:300;">I've got tech skills and options on the table. Why would the Navy beat a tech career?</div>
+      </div>
+      <div class="fu" style="background:rgba(201,168,76,.06);border:1px solid rgba(201,168,76,.2);border-left:3px solid var(--gold);padding:16px 20px;">
+        <div style="font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;">Growth Seeker</div>
+        <div style="font-size:14px;color:var(--txt-mid);font-weight:300;">I want new experiences I couldn't get anywhere else. I'm not looking for a job. I'm looking for who I become because of it.</div>
+      </div>
+      <div class="fu" style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-left:3px solid var(--teal);padding:16px 20px;">
+        <div style="font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--teal-l);margin-bottom:6px;">Career Builder</div>
+        <div style="font-size:14px;color:var(--txt-mid);font-weight:300;">Why should I choose the Navy over a graduate scheme at a tech company?</div>
+      </div>
+      <div class="fu" style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-left:3px solid var(--teal);padding:16px 20px;">
+        <div style="font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--teal-l);margin-bottom:6px;">Purpose Server</div>
+        <div style="font-size:14px;color:var(--txt-mid);font-weight:300;">Does this align with my values? Do people like me belong here?</div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span class="foot-l">Emma Cook | TMP268 | July 2026</span><span class="foot-r">Question 1 - The cultural shift</span></div>
+</div>
+
+<!-- S5: MEET MAYA -->
+<div class="slide" id="s5">
+  <div class="gbar"></div>
+  <div class="split">
+    <div class="sp-l" style="background:rgba(0,0,0,.15);">
+      <div class="fu" style="display:flex;align-items:center;gap:18px;margin-bottom:24px;">
+        <svg width="72" height="72"><use href="#maya"/></svg>
+        <div><div class="tag teal" style="margin-bottom:6px;">Meet Maya</div><div style="font-family:var(--fd);font-size:32px;font-weight:900;color:#fff;line-height:1;">22.</div></div>
+      </div>
+      <div class="hl fu">No military connections.<br>Found the Navy on TikTok.</div>
+      <div class="body fu">She's exactly who this brief needs to reach. <strong>Curious, capable, purpose-driven.</strong><br><br>She has no idea where to start. The current experience wasn't built for her.<br><br>We're going to follow her through it. Then show what it should look like.</div>
+    </div>
+    <div class="sp-r">
+      <div class="tag gold fu">Four personas. Maya is one.</div>
+      <div class="pgrid fu">
+        <div class="pcard"><div class="pname">Tech Specialist</div><div class="pdesc">Tech-skilled graduate weighing the Navy as an alternative to a career in tech</div></div>
+        <div class="pcard hero"><div class="pname">Growth Seeker - Maya</div><div class="pdesc">Seeking challenge, identity and meaningful change. No military connections.</div></div>
+        <div class="pcard"><div class="pname">Purpose Server</div><div class="pdesc">Driven by service and values. Needs identity and belonging confirmed.</div></div>
+        <div class="pcard gold"><div class="pname">Career Builder</div><div class="pdesc">Weighing the Navy against a graduate scheme at a tech company</div></div>
+      </div>
+      <div class="callout fu" style="margin-top:4px;">The current experience seems to treat all four of them <strong>similarly</strong>. That's the first problem.</div>
+    </div>
+  </div>
+  <div class="foot"><span class="foot-l">Emma Cook | TMP268 | July 2026</span><span class="foot-r">The audience</span></div>
+</div>
+
+<!-- S6: SITE VISIT -->
+<div class="slide" id="s6">
+  <div class="gbar"></div>
+  <div class="split">
+    <div class="sp-l red-b" style="background:rgba(0,0,0,.12);">
+      <div class="fu" style="display:flex;align-items:center;gap:14px;margin-bottom:20px;">
+        <svg width="60" height="60"><use href="#maya"/></svg>
+        <div class="mtag bad" style="margin-bottom:0;">Maya - Step 1</div>
+      </div>
+      <div class="hl fu">She finds the website.<br>She's ready to explore.</div>
+      <div class="body fu">TikTok brought her here. Real women, candid stories, day-in-the-life content.<br><br>She goes to <strong>royalnavy.mod.uk/careers</strong>.</div>
+    </div>
+    <div class="sp-r">
+      <div class="tag red fu">What she actually encounters</div>
+      <div class="item bad fu"><div class="item-icon">👤</div><div class="item-text">First visit: <strong>only men in hero imagery</strong> on the careers site. Women appear prominently on Instagram and in the live chat. Not here.</div></div>
+      <div class="item highlight fu"><div class="item-icon">✦</div><div class="item-text"><span class="pos">What's working:</span> once she inputs her details, the site does start tailoring content toward her. <strong>The personalisation technology is already there.</strong> It just starts too late.</div></div>
+      <div class="item bad fu"><div class="item-icon">❓</div><div class="item-text">To explore roles she must select a <strong>profession and entry level</strong> upfront. She's not ready to commit. There's no "I'm still exploring" path. And she shouldn't have to <strong>submit personal information</strong> just to see herself represented.</div></div>
+      <div class="callout fu">The inclusive content and the personalisation capability both exist. They are simply not present <strong>at the moment of first consideration</strong>.</div>
+    </div>
+  </div>
+  <div class="foot"><span class="foot-l">Emma Cook | TMP268 | July 2026</span><span class="foot-r">Challenge - Motivational mismatch</span></div>
+</div>
+
+<!-- S7: REGISTER (BUG FIXED - bullet 3 now stays put) -->
+<div class="slide" id="s7">
+  <div class="gbar"></div>
+  <div class="split">
+    <div class="sp-l red-b" style="background:rgba(0,0,0,.12);">
+      <div class="fu" style="display:flex;align-items:center;gap:14px;margin-bottom:20px;">
+        <svg width="60" height="60"><use href="#maya"/></svg>
+        <div class="mtag bad" style="margin-bottom:0;">Maya - Step 2</div>
+      </div>
+      <div class="hl fu">She tries to register.<br>The first question stops her.</div>
+      <div class="body fu"><strong>"What is your preferred service or profession?"</strong></div>
+    </div>
+    <div class="sp-r">
+      <div class="tag red fu">What stops her at this step</div>
+      <div class="item bad fi"><div class="item-icon">❓</div><div class="item-text">No <strong>"I'm not sure yet"</strong> option exists. Every path forward requires a commitment she's not ready to make.</div></div>
+      <div class="item bad fi"><div class="item-icon">🚪</div><div class="item-text">The only way to proceed is to <strong>guess</strong>. There's no way to leave, explore more, and come back later.</div></div>
+      <div class="item bad fi"><div class="item-icon">📧</div><div class="item-text">She submits anyway and waits for her <strong>confirmation email</strong>.</div></div>
+      <div class="callout red fi">A non-predisposed prospect is being asked to make a commitment at the exact moment of <strong>curiosity</strong>.</div>
+    </div>
+  </div>
+  <div class="foot"><span class="foot-l">Emma Cook | TMP268 | July 2026</span><span class="foot-r">Challenge - Commitment-first funnel</span></div>
+</div>
+
+<!-- S8: EMAIL IN SPAM (NEW DEDICATED SLIDE) -->
+<div class="slide" id="s8">
+  <div class="gbar"></div>
+  <div class="split">
+    <div class="sp-l red-b" style="background:rgba(0,0,0,.12);">
+      <div class="fu" style="display:flex;align-items:center;gap:14px;margin-bottom:20px;">
+        <svg width="60" height="60"><use href="#maya"/></svg>
+        <div class="mtag bad" style="margin-bottom:0;">Maya - Step 3</div>
+      </div>
+      <div class="hl fu">Her confirmation email.<br>Already invisible.</div>
+      <div class="body fu">She checks her phone. Nothing in her inbox.<br><br>She doesn't think to check spam. Most people don't, especially on a first interaction with a brand they don't know yet.<br><br>The first official contact from the Royal Navy never reaches her.</div>
+    </div>
+    <div class="sp-r">
+      <div class="tag red fu">Why it happens</div>
+      <div class="item bad fu"><div class="item-icon">📧</div><div class="item-text">The email is sent from one address but routed through a completely different server. <strong>Email providers treat this as a potential fake.</strong></div></div>
+      <div class="item bad fu"><div class="item-icon">🔓</div><div class="item-text">No email verification step. The system sends the confirmation <strong>before checking the address even exists</strong>, damaging delivery rates over time.</div></div>
+      <div class="item bad fu" id="spam-item"><div class="item-icon">📂</div><div class="item-text">Generic content, no personalisation, single bold call-to-action. <strong>This is exactly the pattern spam filters are built to catch.</strong></div></div>
+      <div class="callout red fu">For a 16-24 year old checking their phone, a confirmation email in spam is <strong>effectively no confirmation email</strong>.</div>
+    </div>
+  </div>
+  <div class="foot"><span class="foot-l">Emma Cook | TMP268 | July 2026</span><span class="foot-r">Challenge - The in-funnel experience</span></div>
+</div>
+
+<!-- S9: IN THE PROCESS, UNSUPPORTED (NEW DEDICATED SLIDE) -->
+<div class="slide" id="s9">
+  <div class="gbar"></div>
+  <div class="split">
+    <div class="sp-l red-b" style="background:rgba(0,0,0,.12);">
+      <div class="fu" style="display:flex;align-items:center;gap:14px;margin-bottom:20px;">
+        <svg width="60" height="60" style="filter:grayscale(.5) brightness(.7);opacity:.75;"><use href="#maya"/></svg>
+        <div class="mtag bad" style="margin-bottom:0;">Maya - Step 4</div>
+      </div>
+      <div class="hl fu">She finds the email.<br>Then hits another wall.</div>
+      <div class="body fu">Maya digs through spam and finds it. She clicks through to the application form.<br><br>Nothing is pre-filled. Not her name. Not the answers she gave at registration. Almost every question is one she's <strong>already answered once</strong>.</div>
+    </div>
+    <div class="sp-r">
+      <div class="tag red fu">What this reveals</div>
+      <div class="item bad fu"><div class="item-icon">📋</div><div class="item-text">The system <strong>doesn't remember her at all.</strong> Name, contact details, the answers she already gave. All of it asked again from scratch.</div></div>
+      <div class="item bad fu"><div class="item-icon">💭</div><div class="item-text">"Did they not listen to me? <strong>I've already shared this.</strong>" Two separate systems, no connection between them.</div></div>
+      <div class="item bad fu"><div class="item-icon">🧭</div><div class="item-text">She's <strong>still not sure</strong> about her profession answer, and has to face the question again with no more support than the first time.</div></div>
+      <div class="callout red fu">A system that genuinely remembered her would feel like support. One that asks her to repeat everything feels like <strong>nobody was listening</strong>.</div>
+    </div>
+  </div>
+  <div class="foot"><span class="foot-l">Emma Cook | TMP268 | July 2026</span><span class="foot-r">Challenge - Unsupported in the process</span></div>
+</div>
+
+<!-- S10: SILENCE -->
+<div class="slide" id="s10">
+  <div class="gbar"></div>
+  <div class="split">
+    <div class="sp-l red-b" style="background:rgba(0,0,0,.12);">
+      <div class="fu" style="display:flex;align-items:center;gap:14px;margin-bottom:20px;">
+        <svg width="60" height="60" style="filter:grayscale(.7) brightness(.55);opacity:.55;"><use href="#maya"/></svg>
+        <div class="mtag bad" style="margin-bottom:0;">Maya - Step 5</div>
+      </div>
+      <div class="hl fu">Months pass.<br>Then she's gone.</div>
+      <div class="body fu">Maya was motivated. She was training. She was ready.<br><br>No status updates. No prep content. No sense of what's coming next.<br><br>She takes on extra shifts. She misses training. She starts looking at grad schemes.<br><br>She doesn't formally withdraw. She just <em>disappears</em>.</div>
+    </div>
+    <div class="sp-r">
+      <div class="silence fu">
+        <div class="silence-num" id="days-c">0</div>
+        <div class="silence-lbl">median days in the process - Parliamentary answer, May 2025</div>
+      </div>
+      <div class="item bad fu"><div class="item-icon">💼</div><div class="item-text">Forum data confirms the pattern: candidates who start motivated <strong>lose momentum</strong> over months of silence and end up taking civilian jobs instead.</div></div>
+      <div class="callout red fu">A motivated, engaged Maya <strong>left because the experience failed her</strong>.</div>
+    </div>
+  </div>
+  <div class="foot"><span class="foot-l">Emma Cook | TMP268 | July 2026</span><span class="foot-r">Challenge - In-funnel drop-off</span></div>
+</div>
+
+<!-- S11: PIVOT -->
+<div class="slide" id="s11">
+  <div class="gbar"></div>
+  <div style="flex:1;display:flex;align-items:center;justify-content:center;position:relative;">
+    <div style="position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 40%,rgba(26,122,138,.16),transparent 70%);"></div>
+    <div style="position:relative;z-index:1;text-align:center;max-width:700px;padding:48px;">
+      <div class="fu" style="font-size:11px;font-weight:700;letter-spacing:.28em;text-transform:uppercase;color:var(--teal-l);margin-bottom:32px;">Now let's rebuild it</div>
+      <div class="fu" style="font-family:var(--fd);font-size:clamp(42px,7vw,80px);font-weight:900;line-height:1.0;color:#fff;margin-bottom:32px;">Same Maya.<br><em style="color:var(--gold);font-style:italic;">Different experience.</em></div>
+      <div class="fu" style="width:56px;height:3px;background:var(--gold);margin:0 auto 32px;"></div>
+      <div class="fu" style="font-size:clamp(16px,1.8vw,20px);font-weight:300;line-height:1.7;color:var(--txt-mid);">The Royal Navy's proposition is <strong style="color:var(--txt);">genuinely compelling</strong>.<br>The barriers are in how the experience is designed.<br><br>Three improvements. Deliverable within Adobe Experience Platform and Adobe Journey Optimizer.<br>Maya makes it through.</div>
+    </div>
+  </div>
+  <div class="foot"><span class="foot-l">Emma Cook | TMP268 | July 2026</span><span class="foot-r">The pivot</span></div>
+</div>
+
+<!-- S12: FIX 1a - INTEREST CAPTURED -->
+<div class="slide" id="s12">
+  <div class="gbar"></div>
+  <div class="split">
+    <div class="sp-l teal-b" style="background:rgba(26,122,138,.04);">
+      <div class="fu" style="display:flex;align-items:center;gap:14px;margin-bottom:20px;">
+        <svg width="60" height="60"><use href="#maya"/></svg>
+        <div class="mtag good" style="margin-bottom:0;">Improvement 1</div>
+      </div>
+      <div class="hl fu">Interest-first.<br>No commitment required.</div>
+      <div class="body fu">I arrived at this because the registration flow has no exploration mode. Every path forces a decision Maya isn't ready to make.<br><br>Replace "What's your preferred service?" with a single prompt:<br><strong style="color:var(--teal-l);">"Curious about the Royal Navy? Leave your email."</strong><br><br>No service preference required. No application implied. Just a way in.</div>
+      <div class="aep fu">Adobe Experience Platform and Adobe Journey Optimizer</div>
+    </div>
+    <div class="sp-r">
+      <div class="tag good fu">What changes at this moment</div>
+      <div class="item good fu"><div class="item-icon">✉️</div><div class="item-text">A single field. <strong>Just an email address.</strong> Nothing else required to take the next step.</div></div>
+      <div class="item good fu"><div class="item-icon">🚪</div><div class="item-text">The door is open to <strong>anyone exploring</strong>, not just people ready to commit to a service.</div></div>
+      <div class="item good fu"><div class="item-icon">📥</div><div class="item-text">The moment she submits, her interest is <strong>captured in Adobe Experience Platform</strong>. The relationship begins here, not at registration.</div></div>
+      <div class="callout fu">Capturing interest before asking for commitment closes the gap between curiosity and a meaningful first step.</div>
+    </div>
+  </div>
+  <div class="foot"><span class="foot-l">Emma Cook | TMP268 | July 2026</span><span class="foot-r">Improvement 1 - Interest captured</span></div>
+</div>
+
+<!-- S12b: FIX 1b - QUIZ AND PERSONA -->
+<div class="slide" id="s12b">
+  <div class="gbar"></div>
+  <div class="split">
+    <div class="sp-l teal-b" style="background:rgba(26,122,138,.04);">
+      <div class="fu" style="display:flex;align-items:center;gap:14px;margin-bottom:20px;">
+        <svg width="60" height="60"><use href="#maya"/></svg>
+        <div class="mtag good" style="margin-bottom:0;">Improvement 1</div>
+      </div>
+      <div class="hl fu">A 90-second quiz.<br>Framed as discovery, not screening.</div>
+      <div class="body fu">Straight after she leaves her email, Maya is offered something genuinely useful: a short quiz to help her work out where she might fit.<br><br>It doesn't feel like an application. It feels like the AI adviser she'll later be offered in her inbox, just a step earlier.<br><br>Her answers map her to the <strong style="color:var(--teal-l);">Growth Seeker persona</strong>. That confidence score lands in Adobe Experience Platform.</div>
+      <div class="aep fu">Adobe Experience Platform</div>
+    </div>
+    <div class="sp-r">
+      <div class="tag good fu">What the quiz unlocks</div>
+      <div class="item good fu"><div class="item-icon">🧭</div><div class="item-text">Questions are about <strong>motivation, not qualifications.</strong> What draws her in, not what she's already decided.</div></div>
+      <div class="item good fu"><div class="item-icon">📊</div><div class="item-text">Her result builds a <strong>persona confidence score</strong>, refined continuously by every email she opens and link she clicks afterward.</div></div>
+      <div class="item good fu"><div class="item-icon">🎯</div><div class="item-text">She's matched to Growth Seeker. The system now knows to talk to her about <strong>challenge, identity and meaningful change</strong>, not qualification levels.</div></div>
+      <div class="callout fu">The four personas become the visible architecture of her experience, instead of being invisible logic nobody outside the platform ever sees.</div>
+    </div>
+  </div>
+  <div class="foot"><span class="foot-l">Emma Cook | TMP268 | July 2026</span><span class="foot-r">Improvement 1 - Quiz and persona</span></div>
+</div>
+
+<!-- S12c: FIX 1c - NURTURE EMAILS -->
+<div class="slide" id="s12c">
+  <div class="gbar"></div>
+  <div class="split">
+    <div class="sp-l teal-b" style="background:rgba(26,122,138,.04);">
+      <div class="fu" style="display:flex;align-items:center;gap:14px;margin-bottom:20px;">
+        <svg width="60" height="60"><use href="#maya"/></svg>
+        <div class="mtag good" style="margin-bottom:0;">Improvement 1</div>
+      </div>
+      <div class="hl fu">Five emails.<br>Her content, her language.</div>
+      <div class="body fu">Adobe Journey Optimizer fires a 5-email sequence over 21 days, built around the Growth Seeker persona she's just been matched to.<br><br>Every email earns the right to the next one. Nothing generic. Nothing that could have been sent to all four personas.</div>
+      <div class="aep fu">Adobe Journey Optimizer</div>
+    </div>
+    <div class="sp-r">
+      <div class="tag good fu">What Maya receives</div>
+      <div class="item good fu"><div class="item-icon">✉️</div><div class="item-text">Email 1: <strong>"What does a year in the Royal Navy actually look like?"</strong> Her Growth Seeker prompt, answered immediately.</div></div>
+      <div class="item good fu"><div class="item-icon">👥</div><div class="item-text">Email 3: <strong>Peer stories from women who joined without connections.</strong> Content that exists on TikTok, now in her inbox.</div></div>
+      <div class="item good fu"><div class="item-icon">💬</div><div class="item-text">Email 5: <strong>"Not sure which service or profession is right for you? Chat with our AI adviser."</strong> A direct link to talk it through, instead of guessing on a form later.</div></div>
+      <div class="item good fu"><div class="item-icon">🔄</div><div class="item-text">14 days inactive: Adobe Journey Optimizer fires re-engagement. <strong>"Still thinking? Here's what Growth Seekers told us."</strong></div></div>
+    </div>
+  </div>
+  <div class="foot"><span class="foot-l">Emma Cook | TMP268 | July 2026</span><span class="foot-r">Improvement 1 - Nurture emails</span></div>
+</div>
+
+<!-- S13: FIX 2 -->
+<div class="slide" id="s13">
+  <div class="gbar"></div>
+  <div class="split">
+    <div class="sp-l teal-b" style="background:rgba(26,122,138,.04);">
+      <div class="fu" style="display:flex;align-items:center;gap:14px;margin-bottom:20px;">
+        <svg width="60" height="60"><use href="#maya"/></svg>
+        <div class="mtag good" style="margin-bottom:0;">Improvement 2</div>
+      </div>
+      <div class="hl fu">The highest-intent moment.<br>Friction-free.</div>
+      <div class="body fu">I arrived at this because the data showed the same pattern at every touchpoint after commitment: friction, exactly when trust matters most.<br><br>Maya has decided. She's the highest-value prospect in the funnel.<br><br>This moment should <strong style="color:var(--teal-l);">remove every reason for doubt.</strong> Build trust. Create momentum. Confirm she made the right call.</div>
+      <div class="aep fu">Fixes coordinated with the application IT provider</div>
+    </div>
+    <div class="sp-r">
+      <div class="tag good fu">The fixes</div>
+      <div class="item good fu"><div class="item-icon">✅</div><div class="item-text"><strong>Email verification first.</strong> Confirmation only sends to confirmed addresses. Fixes spam delivery and removes bad data downstream.</div></div>
+      <div class="item good fu"><div class="item-icon">🔒</div><div class="item-text"><strong>Fix the sending setup</strong> so confirmation emails come from a verified Royal Navy address. No more spam signals.</div></div>
+      <div class="item good fu"><div class="item-icon">📝</div><div class="item-text"><strong>Pre-populated application form.</strong> Registration data carried forward, editable. Resolves duplicate records too.</div></div>
+      <div class="item good fu"><div class="item-icon">🔑</div><div class="item-text"><strong>One label. One login.</strong> Maya feels ready to be a candidate now. Drop "username" entirely. Refer to <strong>candidate ID</strong> throughout, from the email to the login screen.</div></div>
+    </div>
+  </div>
+  <div class="foot"><span class="foot-l">Emma Cook | TMP268 | July 2026</span><span class="foot-r">Improvement 2 - Application friction</span></div>
+</div>
+
+<!-- S14: FIX 3 -->
+<div class="slide" id="s14">
+  <div class="gbar"></div>
+  <div class="split">
+    <div class="sp-l teal-b" style="background:rgba(26,122,138,.04);">
+      <div class="fu" style="display:flex;align-items:center;gap:14px;margin-bottom:20px;">
+        <svg width="60" height="60"><use href="#maya"/></svg>
+        <div class="mtag good" style="margin-bottom:0;">Improvement 3</div>
+      </div>
+      <div class="hl fu">The content exists.<br>It's in the wrong place.</div>
+      <div class="body fu">I arrived at this by comparing every channel side by side. The representation gap isn't a content problem. It's a distribution problem.<br><br><strong>TikTok:</strong> rich organic content from women. Unmanaged.<br><strong>Instagram:</strong> women featured. Inclusive tone.<br><strong>Live chat:</strong> strong female representation. Buried as a reactive tool.<br><strong>Careers site:</strong> women almost absent on first visit. This is where Maya decides.</div>
+    </div>
+    <div class="sp-r">
+      <div class="tag good fu">Behavioural signals into personalised content</div>
+      <div class="item good fu"><div class="item-icon">📍</div><div class="item-text"><strong>Adobe Experience Platform tracks Maya's behaviour from the first visit</strong> - viewing female officer profiles, dwelling on life-at-sea content, returning within 7 days.</div></div>
+      <div class="item good fu"><div class="item-icon">🎯</div><div class="item-text">When her behaviour crosses a threshold, <strong>Adobe Journey Optimizer switches the site to show her content that reflects her</strong> - peer stories, career continuity FAQs, maternity, physical standards.</div></div>
+      <div class="item good fu"><div class="item-icon">💬</div><div class="item-text"><strong>Live chat elevated</strong> to proactive exploration, and surfaced beyond the website too. It could be linked directly from nurture emails or featured in social content, not just buried on-site.</div></div>
+      <div class="item good fu"><div class="item-icon">📐</div><div class="item-text">A <strong>CX intervention grounded in behavioural signals.</strong> Not a diversity badge. Same mechanism applies to any underrepresented audience.</div></div>
+    </div>
+  </div>
+  <div class="foot"><span class="foot-l">Emma Cook | TMP268 | July 2026</span><span class="foot-r">Improvement 3 - Representation gap</span></div>
+</div>
+
+<!-- S15: IN-APPLICATION -->
+<div class="slide" id="s15">
+  <div class="gbar"></div>
+  <div class="split">
+    <div class="sp-l teal-b" style="background:rgba(26,122,138,.04);">
+      <div class="fu" style="display:flex;align-items:center;gap:14px;margin-bottom:20px;">
+        <svg width="60" height="60"><use href="#maya"/></svg>
+        <div class="mtag good" style="margin-bottom:0;">Personalisation - Maya is in</div>
+      </div>
+      <div class="hl fu">She's committed.<br>Now we need to keep her.</div>
+      <div class="body fu">The job is no longer to convince her. It's to <strong style="color:var(--teal-l);">keep her.</strong><br><br>The gap between passing initial stages and starting Phase One training is where most candidates are lost. Up to a year of waiting, with almost no communication.<br><br>At Up Learn, a structured programme mapped to the school year achieved <strong>100% comprehension of key terms by Results Day 2025.</strong> The principle applies directly here.</div>
+    </div>
+    <div class="sp-r">
+      <div class="tag good fu">Every stage. Within 24 hours.</div>
+      <div class="item good fu"><div class="item-icon">⚡</div><div class="item-text"><strong>Stage-triggered communications</strong> at every step - eligibility, psychometric, medical, fitness, Admiralty Interview Board. Status confirmed, next stage explained, timing set.</div></div>
+      <div class="item good fu"><div class="item-icon">🏃</div><div class="item-text"><strong>Weekly fitness nudges</strong> when a test is 4+ weeks away. Role-appropriate training plan sent automatically. Directly improves pass rates.</div></div>
+      <div class="item good fu"><div class="item-icon">🚨</div><div class="item-text"><strong>Drop-off detection:</strong> 14 days inactive fires a re-engagement email. 28 days flags Maya to a recruiter for a personal call. She is visible before she leaves.</div></div>
+      <div class="item good fu"><div class="item-icon">⏳</div><div class="item-text"><strong>Biggest opportunity:</strong> the gap between medical assessment and the Admiralty Interview Board is the longest, least-supported period. A structured programme here has disproportionate impact.</div></div>
+    </div>
+  </div>
+  <div class="foot"><span class="foot-l">Emma Cook | TMP268 | July 2026</span><span class="foot-r">Personalisation - keeping Maya in</span></div>
+</div>
+
+<!-- S16: MAYA PHASE ONE -->
+<div class="slide" id="s16">
+  <div class="gbar"></div>
+  <div style="flex:1;display:flex;align-items:center;justify-content:center;position:relative;">
+    <div style="position:absolute;inset:0;background:radial-gradient(ellipse 70% 55% at 50% 50%,rgba(26,122,138,.12),transparent 65%);"></div>
+    <div style="position:relative;z-index:1;text-align:center;max-width:760px;padding:48px;display:flex;flex-direction:column;align-items:center;">
+      <svg width="100" height="100" class="fu" style="margin-bottom:28px;"><use href="#maya-check"/></svg>
+      <div class="fu" style="font-size:11px;font-weight:700;letter-spacing:.28em;text-transform:uppercase;color:var(--teal-l);margin-bottom:24px;">Phase One Training</div>
+      <div class="fu" style="font-family:var(--fd);font-size:clamp(32px,5vw,58px);font-weight:900;line-height:1.1;color:#fff;margin-bottom:28px;">Maya made it through.<br><em style="color:var(--gold);font-style:italic;">Because the experience let her.</em></div>
+      <div class="fu" style="width:56px;height:2px;background:var(--gold);margin-bottom:28px;"></div>
+      <div class="fu" style="font-size:clamp(14px,1.6vw,17px);font-weight:300;color:var(--txt-mid);line-height:1.7;max-width:580px;">Every candidate deserves an experience that <strong style="color:var(--txt);">supports the decision they're making.</strong><br>These are CX problems with CX solutions, deliverable within the existing platform.</div>
+    </div>
+  </div>
+  <div class="foot"><span class="foot-l">Emma Cook | TMP268 | July 2026</span><span class="foot-r">Maya - Phase One</span></div>
+</div>
+
+<!-- S17: MEASUREMENT -->
+<div class="slide" id="s17">
+  <div class="gbar"></div>
+  <div style="flex:1;display:flex;flex-direction:column;padding:44px 56px 32px;gap:28px;">
+    <div class="fu" style="display:flex;align-items:baseline;gap:16px;">
+      <span style="font-family:var(--fd);font-size:clamp(26px,3.2vw,38px);font-weight:900;color:#fff;">Measuring impact</span>
+      <span style="font-size:14px;color:var(--txt-dim);font-style:italic;">A list of metrics is not a methodology.</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;">
+      <div class="fu" style="padding:22px 18px;display:flex;flex-direction:column;gap:10px;background:rgba(255,255,255,.025);border-top:3px solid var(--gold);">
+        <div style="font-size:9px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--txt-dim);">Layer 1</div>
+        <div style="font-size:15px;font-weight:700;color:#fff;line-height:1.2;">North Star</div>
+        <div style="font-size:11px;font-weight:600;color:var(--gold);">12+ month lag</div>
+        <div style="font-size:13px;line-height:1.6;color:rgba(255,255,255,.4);font-weight:300;">Phase One completions by <strong style="color:rgba(255,255,255,.7);">cohort, persona segment and entry route</strong></div>
+      </div>
+      <div class="fu" style="padding:22px 18px;display:flex;flex-direction:column;gap:10px;background:rgba(255,255,255,.025);border-top:3px solid var(--teal-l);">
+        <div style="font-size:9px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--txt-dim);">Layer 2</div>
+        <div style="font-size:15px;font-weight:700;color:#fff;line-height:1.2;">Stage Conversion</div>
+        <div style="font-size:11px;font-weight:600;color:var(--teal-l);">Observable in weeks</div>
+        <div style="font-size:13px;line-height:1.6;color:rgba(255,255,255,.4);font-weight:300;">Conversion at each gate: <strong style="color:rgba(255,255,255,.7);">registration, eligibility, psychometric, medical, fitness, Admiralty Interview Board, offer, Phase One</strong></div>
+      </div>
+      <div class="fu" style="padding:22px 18px;display:flex;flex-direction:column;gap:10px;background:rgba(255,255,255,.025);border-top:3px solid rgba(255,255,255,.25);">
+        <div style="font-size:9px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--txt-dim);">Layer 3</div>
+        <div style="font-size:15px;font-weight:700;color:#fff;line-height:1.2;">Engagement</div>
+        <div style="font-size:11px;font-weight:600;color:var(--txt-dim);">Observable in real time</div>
+        <div style="font-size:13px;line-height:1.6;color:rgba(255,255,255,.4);font-weight:300;"><strong style="color:rgba(255,255,255,.7);">Email capture, quiz completion, persona distribution,</strong> open/click by segment, chatbot resolution, 30-day return</div>
+      </div>
+      <div class="fu" style="padding:22px 18px;display:flex;flex-direction:column;gap:10px;background:rgba(255,255,255,.025);border-top:3px solid rgba(26,122,138,.5);">
+        <div style="font-size:9px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--txt-dim);">Layer 4</div>
+        <div style="font-size:15px;font-weight:700;color:#fff;line-height:1.2;">Leading Indicators</div>
+        <div style="font-size:11px;font-weight:600;color:var(--teal);">Observable in days</div>
+        <div style="font-size:13px;line-height:1.6;color:rgba(255,255,255,.4);font-weight:300;">Days to capture, capture to application, <strong style="color:rgba(255,255,255,.7);">persona match rate,</strong> 14-day return. Proxies for downstream conversion.</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+      <div class="reveal-item" id="cad0" style="padding:18px 20px;background:rgba(255,255,255,.03);border-left:2px solid var(--teal);">
+        <div style="font-size:13px;font-weight:700;color:var(--teal-l);margin-bottom:6px;">Baseline first, always</div>
+        <div style="font-size:13px;line-height:1.55;color:rgba(255,255,255,.45);font-weight:300;">No intervention goes live without a baseline. No baseline means no attribution.</div>
+      </div>
+      <div class="reveal-item" id="cad1" style="padding:18px 20px;background:rgba(255,255,255,.03);border-left:2px solid var(--teal);">
+        <div style="font-size:13px;font-weight:700;color:var(--teal-l);margin-bottom:6px;">A/B testing as standard</div>
+        <div style="font-size:13px;line-height:1.55;color:rgba(255,255,255,.45);font-weight:300;">Min. 4 weeks or 500 sessions. Act at statistical significance only. Document the losses.</div>
+      </div>
+      <div class="reveal-item" id="cad2" style="padding:18px 20px;background:rgba(255,255,255,.03);border-left:2px solid var(--teal);">
+        <div style="font-size:13px;font-weight:700;color:var(--teal-l);margin-bottom:6px;">Shared visibility</div>
+        <div style="font-size:13px;line-height:1.55;color:rgba(255,255,255,.45);font-weight:300;">Dashboard open to TMP268 CX, UX and the Royal Navy. Shared measurement means shared ownership.</div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span class="foot-l">Emma Cook | TMP268 | July 2026</span><span class="foot-r">Measuring impact</span></div>
+</div>
+
+<!-- S18: FIRST 90 DAYS (NEW) -->
+<div class="slide" id="s18">
+  <div class="gbar"></div>
+  <div style="flex:1;display:flex;align-items:center;justify-content:center;position:relative;">
+    <div style="position:absolute;inset:0;background:radial-gradient(ellipse 70% 55% at 50% 50%,rgba(201,168,76,.06),transparent 65%);"></div>
+    <div style="position:relative;z-index:1;max-width:780px;padding:48px;text-align:center;">
+      <div class="fu" style="font-size:11px;font-weight:700;letter-spacing:.28em;text-transform:uppercase;color:var(--teal-l);margin-bottom:24px;">A note on scope</div>
+      <div class="fu" style="font-family:var(--fd);font-size:clamp(26px,4vw,42px);font-weight:900;line-height:1.15;color:#fff;margin-bottom:28px;">This is one persona.<br>One journey. One audit.</div>
+      <div class="fu" style="width:56px;height:2px;background:var(--gold);margin:0 auto 28px;"></div>
+      <div class="fu" style="font-size:15px;font-weight:300;line-height:1.8;color:var(--txt-mid);text-align:left;max-width:640px;margin:0 auto;">In my first 90 days, I'd go <strong style="color:var(--txt);">deep and wide</strong> across everything available to us: every persona, every channel, every stage of the journey, not just the one I've shown today.<br><br>I'd look for <strong style="color:var(--txt);">quick, small optimisations</strong> we could ship fast and prove value with early.<br><br>Alongside that, I'd map the <strong style="color:var(--txt);">longer-term improvements and the bigger picture</strong>: where the platform could take us, and what a fully personalised, end-to-end experience looks like across all three services.<br><br>Maya is one story. There are three more personas, and both the Army and the Royal Air Force, waiting for the same thinking.</div>
+    </div>
+  </div>
+  <div class="foot"><span class="foot-l">Emma Cook | TMP268 | July 2026</span><span class="foot-r">First 90 days</span></div>
+</div>
+
+<!-- S19: Q&A -->
+<div class="slide" id="s19">
+  <div class="gbar"></div>
+  <div style="flex:1;display:flex;align-items:center;justify-content:center;position:relative;">
+    <div style="position:absolute;inset:0;background:radial-gradient(ellipse 70% 55% at 50% 50%,rgba(201,168,76,.07),transparent 65%);"></div>
+    <div style="position:relative;z-index:1;text-align:center;max-width:720px;padding:48px;display:flex;flex-direction:column;align-items:center;">
+      <div class="fu" style="font-size:11px;font-weight:700;letter-spacing:.28em;text-transform:uppercase;color:var(--teal-l);margin-bottom:32px;">Over to you</div>
+      <div class="fu" style="font-family:var(--fd);font-size:clamp(52px,10vw,110px);font-weight:900;line-height:.9;color:#fff;margin-bottom:36px;">Questions.</div>
+      <div class="fu" style="width:56px;height:3px;background:var(--gold);margin-bottom:36px;"></div>
+      <div class="fu" style="font-size:clamp(16px,2vw,22px);font-weight:300;font-style:italic;color:var(--gold);line-height:1.65;">Maya made it to Phase One.<br>I'd love to start mine with TMP268.</div>
+      <div class="fu" style="margin-top:40px;font-size:12px;color:var(--txt-dim);letter-spacing:.1em;">Emma Cook - emma.l.cook1@gmail.com - linkedin.com/in/cooki - July 2026</div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /deck -->
+
+<!-- JOURNEY SYSTEM -->
+<div id="journey-wrap" class="hidden">
+  <div class="timeline" id="tl-broken" style="display:none;">
+    <div class="tl-line"><div class="tl-line-fill broken" id="tlf-broken"></div></div>
+    <div class="tl-steps">
+      <div class="tl-step" id="b0"><div class="tl-dot"></div><div class="tl-label">Discovers<br>the Navy</div></div>
+      <div class="tl-step" id="b1"><div class="tl-dot"></div><div class="tl-label">Visits<br>the site</div></div>
+      <div class="tl-step" id="b2"><div class="tl-dot"></div><div class="tl-label">Tries to<br>register</div></div>
+      <div class="tl-step" id="b3"><div class="tl-dot"></div><div class="tl-label">Email<br>in spam</div></div>
+      <div class="tl-step" id="b4"><div class="tl-dot"></div><div class="tl-label">In the<br>process</div></div>
+      <div class="tl-step" id="b5"><div class="tl-dot"></div><div class="tl-label">Silence.<br>She leaves.</div></div>
+    </div>
+  </div>
+  <div class="timeline" id="tl-fixed" style="display:none;">
+    <div class="tl-line"><div class="tl-line-fill fixed" id="tlf-fixed"></div></div>
+    <div class="tl-steps">
+      <div class="tl-step" id="f0"><div class="tl-dot"></div><div class="tl-label">Interest<br>captured</div></div>
+      <div class="tl-step" id="f1"><div class="tl-dot"></div><div class="tl-label">Quiz and<br>persona</div></div>
+      <div class="tl-step" id="f2"><div class="tl-dot"></div><div class="tl-label">Nurture<br>emails</div></div>
+      <div class="tl-step" id="f3"><div class="tl-dot"></div><div class="tl-label">Applies<br>smoothly</div></div>
+      <div class="tl-step" id="f4"><div class="tl-dot"></div><div class="tl-label">Sees<br>herself</div></div>
+      <div class="tl-step" id="f5"><div class="tl-dot"></div><div class="tl-label">Kept<br>engaged</div></div>
+      <div class="tl-step" id="f6"><div class="tl-dot"></div><div class="tl-label">Phase<br>One ✓</div></div>
+      <div class="tl-step" id="f7"><div class="tl-dot"></div><div class="tl-label">Impact</div></div>
+    </div>
+  </div>
+</div>
+
+<div id="maya-traveller" class="hidden">
+  <svg width="60" height="60"><use href="#maya"/></svg>
+  <div class="m-lbl">Maya</div>
+</div>
+
+<div id="prog"><div id="prog-bar"></div></div>
+<div id="ctr"></div>
+<div id="hint">Arrow keys to navigate - F for fullscreen</div>
+
+<script>
+const SLIDES=[...document.querySelectorAll('#deck .slide')];
+const TOTAL=SLIDES.length;
+const jWrap=document.getElementById('journey-wrap');
+const tlB=document.getElementById('tl-broken');
+const tlF=document.getElementById('tl-fixed');
+const tlfB=document.getElementById('tlf-broken');
+const tlfF=document.getElementById('tlf-fixed');
+const maya=document.getElementById('maya-traveller');
+const mayaUse=maya.querySelector('use');
+let cur=0;
+
+let cadRevealed=0;
+const CAD_IDS=['cad0','cad1','cad2'];
+
+// Slide order (0-indexed, matches actual DOM order):
+// 0 title, 1 stat, 2 challenges, 3 cultural shift, 4 meet maya, 5 site visit,
+// 6 register, 7 email-spam, 8 unsupported, 9 silence, 10 pivot,
+// 11 interest captured, 12 quiz and persona, 13 nurture emails,
+// 14 applies smoothly (fix2), 15 sees herself (fix3), 16 kept engaged (in-application),
+// 17 phase one, 18 measurement (impact), 19 first 90 days, 20 Q&A
+const JCFG={
+  0:{type:'none'},
+  1:{type:'none'},
+  2:{type:'none'},
+  3:{type:'none'},
+  4:{type:'broken',bActive:0,bDone:[],broken:[]},                    // meet maya - discovers Navy
+  5:{type:'broken',bActive:1,bDone:[0],broken:[]},                   // site visit
+  6:{type:'broken',bActive:2,bDone:[0,1],broken:[]},                 // register
+  7:{type:'broken',bActive:3,bDone:[0,1,2],broken:[3]},              // email in spam
+  8:{type:'broken',bActive:4,bDone:[0,1,2,3],broken:[3]},            // unsupported in process
+  9:{type:'broken',bActive:null,bDone:[0,1,2,3,4],broken:[3,4,5]},   // silence - she leaves
+  10:{type:'pivot'},
+  11:{type:'fixed',fActive:0,fDone:[]},                              // interest captured
+  12:{type:'fixed',fActive:1,fDone:[0]},                             // quiz and persona
+  13:{type:'fixed',fActive:2,fDone:[0,1]},                           // nurture emails
+  14:{type:'fixed',fActive:3,fDone:[0,1,2]},                         // applies smoothly
+  15:{type:'fixed',fActive:4,fDone:[0,1,2,3]},                       // sees herself
+  16:{type:'fixed',fActive:5,fDone:[0,1,2,3,4]},                     // kept engaged
+  17:{type:'fixed',fActive:6,fDone:[0,1,2,3,4,5]},                   // phase one
+  18:{type:'fixed',fActive:7,fDone:[0,1,2,3,4,5,6]},                 // impact / measurement
+  19:{type:'none'},                                                   // first 90 days
+  20:{type:'none'},                                                   // Q&A
+};
+
+const bEls=[0,1,2,3,4,5].map(i=>document.getElementById('b'+i));
+const fEls=[0,1,2,3,4,5,6,7].map(i=>document.getElementById('f'+i));
+
+function clrSteps(els){els.forEach(e=>e.classList.remove('s-done','s-active','s-broken'));}
+
+
+function moveMaya(stepEl,tlEl){
+  const stR=stepEl.getBoundingClientRect();
+  const tlTop=tlEl.getBoundingClientRect().top;
+  maya.style.left=(stR.left+stR.width/2)+'px';
+  maya.style.bottom=(window.innerHeight-tlTop+10)+'px';
+}
+
+function updateJourney(idx){
+  const cfg=JCFG[idx]||{type:'none'};
+  if(cfg.type==='none'){jWrap.classList.add('hidden');maya.classList.add('hidden');return;}
+  if(cfg.type==='pivot'){jWrap.classList.add('hidden');maya.classList.remove('hidden','glitching','bouncing','state-broken');mayaUse.setAttribute('href','#maya');maya.style.left='50%';maya.style.bottom='100px';return;}
+  jWrap.classList.remove('hidden');
+  if(cfg.type==='broken'){
+    tlB.style.display='flex';tlF.style.display='none';
+    clrSteps(bEls);
+    (cfg.bDone||[]).forEach(i=>bEls[i].classList.add('s-done'));
+    (cfg.broken||[]).forEach(i=>bEls[i].classList.add('s-broken'));
+    if(cfg.bActive!=null) bEls[cfg.bActive].classList.add('s-active');
+    const maxIdx=cfg.bActive!=null?cfg.bActive:(cfg.broken&&cfg.broken.length?Math.max(...cfg.broken):0);
+    tlfB.style.width=(maxIdx/5*100)+'%';
+    const targetEl=cfg.bActive!=null?bEls[cfg.bActive]:(cfg.broken&&cfg.broken.length?bEls[Math.max(...cfg.broken)]:bEls[0]);
+    maya.classList.remove('hidden','state-broken');mayaUse.setAttribute('href','#maya');
+    requestAnimationFrame(()=>{
+      moveMaya(targetEl,tlB);
+      if(cfg.broken&&cfg.broken.length&&cfg.bActive===Math.max(...cfg.broken)){
+        maya.classList.add('glitching');
+        setTimeout(()=>{maya.classList.remove('glitching');maya.classList.add('state-broken');},1500);
+      } else if(cfg.broken&&cfg.broken.length&&cfg.bActive>Math.min(...cfg.broken)){
+        maya.classList.add('state-broken');
+      } else {
+        maya.classList.remove('state-broken','glitching');
+        maya.classList.add('bouncing');
+        setTimeout(()=>maya.classList.remove('bouncing'),1200);
+      }
+    });
+    return;
+  }
+  if(cfg.type==='fixed'){
+    tlB.style.display='none';tlF.style.display='flex';
+    clrSteps(fEls);
+    (cfg.fDone||[]).forEach(i=>fEls[i].classList.add('s-done'));
+    if(cfg.fActive!=null) fEls[cfg.fActive].classList.add('s-active');
+    const maxIdx=cfg.fActive!=null?cfg.fActive:(cfg.fDone&&cfg.fDone.length?Math.max(...cfg.fDone):0);
+    tlfF.style.width=(maxIdx/7*100)+'%';
+    const targetEl=cfg.fActive!=null?fEls[cfg.fActive]:(cfg.fDone&&cfg.fDone.length?fEls[Math.max(...cfg.fDone)]:fEls[0]);
+    maya.classList.remove('hidden','state-broken','glitching','bouncing');
+    mayaUse.setAttribute('href',idx===17?'#maya-check':'#maya');
+    requestAnimationFrame(()=>{
+      moveMaya(targetEl,tlF);
+      maya.classList.add('bouncing');
+      setTimeout(()=>maya.classList.remove('bouncing'),1200);
+    });
+  }
+}
+
+function countUp(el,target,ms){
+  const t0=performance.now();
+  const run=n=>{const p=Math.min((n-t0)/ms,1);el.textContent=Math.round((1-Math.pow(1-p,3))*target);if(p<1)requestAnimationFrame(run);else el.textContent=target;};
+  requestAnimationFrame(run);
+}
+
+function onEnter(idx){
+  if(idx===1){const el=document.getElementById('c-pct');if(el){el.textContent='0';setTimeout(()=>countUp(el,8,1200),350);}}
+  if(idx===9){const el=document.getElementById('days-c');if(el){el.textContent='0';setTimeout(()=>countUp(el,376,1800),500);}}
+  if(idx===7){setTimeout(()=>{const el=document.getElementById('spam-item');if(!el)return;el.classList.add('glitch-now');setTimeout(()=>el.classList.remove('glitch-now'),1400);},900);}
+  if(idx===18){cadRevealed=0;CAD_IDS.forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove('shown');});}
+}
+
+function revealNextCadence(){
+  if(cadRevealed<CAD_IDS.length){
+    const el=document.getElementById(CAD_IDS[cadRevealed]);
+    if(el) el.classList.add('shown');
+    cadRevealed++;
+    return true;
+  }
+  return false;
+}
+
+function goTo(n){
+  if(n<0||n>=TOTAL) return;
+  SLIDES[cur].classList.remove('active');
+  cur=n;
+  SLIDES[cur].classList.add('active');
+  document.getElementById('prog-bar').style.width=((cur+1)/TOTAL*100)+'%';
+  document.getElementById('ctr').textContent=(cur+1)+' / '+TOTAL;
+  updateJourney(cur);
+  onEnter(cur);
+}
+
+function advance(){
+  if(cur===18 && cadRevealed<CAD_IDS.length){revealNextCadence();return;}
+  goTo(cur+1);
+}
+
+goTo(0);
+
+window.addEventListener('load',()=>{try{const el=document.documentElement;if(el.requestFullscreen)el.requestFullscreen();else if(el.webkitRequestFullscreen)el.webkitRequestFullscreen();}catch(e){}});
+window.addEventListener('resize',()=>updateJourney(cur));
+
+document.addEventListener('keydown',e=>{
+  if([' ','ArrowRight','ArrowDown'].includes(e.key)){e.preventDefault();advance();}
+  if(['ArrowLeft','ArrowUp'].includes(e.key)){e.preventDefault();goTo(cur-1);}
+  if(e.key==='f'||e.key==='F') document.documentElement.requestFullscreen?.();
+  if(e.key==='Home') goTo(0);
+  if(e.key==='End') goTo(TOTAL-1);
+});
+let tx=0;
+document.addEventListener('touchstart',e=>tx=e.touches[0].clientX,{passive:true});
+document.addEventListener('touchend',e=>{if(Math.abs(tx-e.changedTouches[0].clientX)>40){if(tx>e.changedTouches[0].clientX)advance();else goTo(cur-1);}},{passive:true});
+document.getElementById('deck').addEventListener('click',advance);
+</script>
+</body>
+</html>
